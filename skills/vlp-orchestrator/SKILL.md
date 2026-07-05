@@ -41,6 +41,8 @@ vlp-video-download
 2. `vlp-speech-transcribe`：把本地视频或音频转成 source SRT/TXT，输出 transcription manifest 和 `run.log`。
 3. `vlp-translation-polish`：把 source SRT/TXT 翻译成目标语言字幕；字幕输出默认经过发布级 polish pass。
 
+进入翻译阶段前，必须明确工具边界：只使用 agent-guided 翻译/润色和确定性结构校验或格式转换；不调用本地 LLM、外部翻译 API、自动翻译 runner 或临时模型流程，除非用户明确要求。
+
 默认交付终点是字幕文本资产，例如 translated SRT/VTT 或 bilingual SRT/VTT。当前 suite 不做 render、burn-in 或视频编码。
 
 双语字幕请求默认保留视频本体：
