@@ -26,8 +26,8 @@ description: "Video Language Pipeline 的语音转文字 skill。把本地视频
 
 ## 输出
 
-- `transcript.srt`。
-- `transcript.txt`。
+- `<input-media-stem>.srt`，或 `--output <name>` 指定的 `<name>.srt`。
+- `<input-media-stem>.txt`，或 `--output <name>` 指定的 `<name>.txt`。
 - transcription metadata。
 - `manifest.json`。
 - `run.log`。
@@ -55,6 +55,7 @@ python3 scripts/transcribe_srt.py --self-check
 ```
 
 如果没有传入 `--output-dir`，输出写入 suite 本地的 `runs/` 目录。
+如果没有传入 `--output`，SRT/TXT 文件名使用输入媒体文件的 filename stem；manifest 输入则使用 manifest 指向的媒体文件 stem。
 
 ## 工作规则
 

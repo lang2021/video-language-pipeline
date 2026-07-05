@@ -18,10 +18,12 @@ python3 transcribe_srt.py --self-check
 
 输出：
 
-- `runs/<job_id>/<name>.srt`
-- `runs/<job_id>/<name>.txt`
+- `runs/<job_id>/<input-media-stem>.srt`，或 `--output <name>` 指定的 `<name>.srt`
+- `runs/<job_id>/<input-media-stem>.txt`，或 `--output <name>` 指定的 `<name>.txt`
 - `runs/<job_id>/manifest.json`
 - `runs/<job_id>/run.log`
+
+没有传 `--output` 时，脚本使用输入媒体文件名的 stem；manifest 输入则使用 manifest 指向的媒体文件 stem。
 
 当前边界：
 

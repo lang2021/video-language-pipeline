@@ -362,6 +362,10 @@ def write_outputs(segments: list[dict], srt_path: Path, txt_path: Path) -> None:
     txt_path.write_text("\n".join(segment["text"] for segment in segments).strip() + "\n", encoding="utf-8")
 
 
+def output_base(input_path: Path, output: str | None) -> str:
+    return Path(output).stem if output else input_path.stem
+
+
 def run_transcribe(args: argparse.Namespace) -> int:
     run = RunRecord(args)
     run.log("run created")
@@ -401,7 +405,7 @@ def run_transcribe(args: argparse.Namespace) -> int:
     if not srt_segments:
         return run.fail("empty_transcript", "ASR completed but produced no transcript segments.")
 
-    base = Path(args.output).stem if args.output else "transcript"
+    base = output_base(input_path, args.output)
     srt_path = run.run_dir / f"{base}.srt"
     txt_path = run.run_dir / f"{base}.txt"
     write_outputs(srt_segments, srt_path, txt_path)
@@ -437,6 +441,8 @@ def self_check() -> int:
         srt = srt_path.read_text(encoding="utf-8")
         assert "00:00:00,000 --> 00:00:00,500" in srt
         assert txt_path.read_text(encoding="utf-8").strip().splitlines() == ["Hello world.", "Again Again"]
+    assert output_base(Path("I_m_not_making_a_New_England_Fakemon_Reg-8.1080p.mp4"), None) == "I_m_not_making_a_New_England_Fakemon_Reg-8.1080p"
+    assert output_base(Path("ignored.mp4"), "fakemon-reg-8") == "fakemon-reg-8"
     print("self-check ok")
     return 0
 
@@ -445,7 +451,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Local audio/video -> timestamped SRT/TXT transcript.")
     parser.add_argument("input", nargs="?", help="Local audio/video path or media ingest manifest path.")
     parser.add_argument("--output-dir", help="Root directory for per-run output directories.")
-    parser.add_argument("--output", default="transcript", help="Output basename inside the run dir.")
+    parser.add_argument("--output", default=None, help="Output basename inside the run dir. Defaults to input media filename stem.")
     parser.add_argument("--engine", choices=["auto", "mlx", "faster"], default="auto", help="ASR engine.")
     parser.add_argument("--model", default="large-v3-turbo", help="faster-whisper model name.")
     parser.add_argument("--language", default=None, help="Optional language code, such as en, zh, ja.")

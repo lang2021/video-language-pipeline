@@ -1,98 +1,95 @@
 # Video Language Pipeline
 
-`Video Language Pipeline` is an agent-first multi-skill suite for video language workflows.
+Language: English | [简体中文](README.zh-CN.md)
 
-It is not CLI-first, not a single root skill, not a simple video downloader, not a simple subtitle translator, and not a complete automated video translation product. The primary interface is the set of `SKILL.md` files that Codex / agents read and follow.
+Video Language Pipeline is an agent-first multi-skill suite for video language workflows.
 
-The suite uses selective tooling. Deterministic media operations should be tool-heavy: video download, file registration, metadata extraction, audio extraction, and speech transcription are suitable for scripts because they depend on external tools, file paths, timestamps, and reproducible execution. Language judgment tasks stay agent-first: translation, polishing, terminology explanation, bilingual phrasing, and faithful style preservation should primarily rely on the agent's language ability and the rules written in `SKILL.md`.
+It is not a single CLI product. The primary interface is the set of `SKILL.md` files that Codex or another agent reads and follows. Scripts are included only where deterministic tooling is useful, such as media ingest, transcription, and subtitle-format helpers.
 
-Scripts may be added when they reduce repetitive mechanical work, but scripts should not replace the agent's semantic judgment unless explicitly required later.
+## What It Does
 
-## Current Phase
+- Download or register video/audio assets.
+- Generate local SRT/TXT transcripts from media.
+- Translate and polish text assets, transcripts, SRT/VTT subtitles, Markdown, and pasted text.
+- Produce translated or bilingual subtitle text assets.
+- Preserve handoff evidence through manifests, logs, and explicit file paths.
 
-Current phase: Phase 1 - video download foundation plus minimal local speech transcription.
+The suite stops at text assets. It does not render or burn subtitles into video.
 
-Phase 1 includes:
+## Skills
 
-- multi-skill structure
-- documentation migration
-- orchestrator positioning
-- download skill positioning
-- minimal speech transcribe implementation
-- translation polish skill positioning
-- site-specific downloader adapter boundaries
-- manifest contract
-- media ingest / speech transcribe / translation polish contracts
-
-Phase 1 does not include:
-
-- translation implementation
-- translation polish implementation
-- bilingual subtitle rendering
-- ASS/SRT generation
-- subtitle burn-in
-- full video translation pipeline
-
-## Skill Overview
-
-| Skill | Status | Can be used standalone? | Responsibility |
-|---|---|---:|---|
-| `vlp-orchestrator` | Agent-reasoning-first | Yes, as full pipeline entry | Intent routing, run planning, skill orchestration |
-| `vlp-video-download` | Script-heavy / Phase 1 active | Yes | Video URL download, local media ingest, site adapters, metadata, manifest |
-| `vlp-speech-transcribe` | Tool-heavy / minimal active | Yes | Audio extraction, ASR transcription, transcript assets |
-| `vlp-translation-polish` | Agent-first, tool-light | Yes | Translation and polish for text assets, terminology consistency, format preservation |
+| Skill | Role |
+|---|---|
+| `vlp-orchestrator` | Routes complete workflows and coordinates handoff between skills. |
+| `vlp-video-download` | Downloads URLs, registers local media, writes manifests and logs. |
+| `vlp-speech-transcribe` | Converts local audio/video into SRT/TXT transcript assets. |
+| `vlp-translation-polish` | Performs agent-guided translation, subtitle polish, terminology consistency, and format preservation. |
 
 Callable skills live under:
 
-- `skills/vlp-orchestrator/SKILL.md`
-- `skills/vlp-video-download/SKILL.md`
-- `skills/vlp-speech-transcribe/SKILL.md`
-- `skills/vlp-translation-polish/SKILL.md`
+```text
+skills/<skill-name>/SKILL.md
+```
 
 There is intentionally no root `SKILL.md`.
 
-## Usage Routing
+## Default Workflow
 
-Use `vlp-orchestrator` for complete or ambiguous workflows.
+For a complete video-to-bilingual-subtitles task, start with `vlp-orchestrator`:
 
-Use `vlp-video-download` for download-only tasks and local media ingest.
+```text
+vlp-video-download
+  -> vlp-speech-transcribe
+  -> vlp-translation-polish
+  -> translated or bilingual SRT/VTT
+```
 
-Use `vlp-speech-transcribe` for local video/audio transcription.
+Bilingual subtitle requests such as “download bilingual subtitles” or “generate bilingual SRT” are treated as full pipeline requests, not raw platform-subtitle downloads.
 
-Use `vlp-translation-polish` for existing text, transcript, subtitle text, pasted text, or Markdown translation/polish. This skill is agent-guided; it does not require an automated translation CLI.
+If a video has no platform subtitles and ASR output contains no useful speech content, the orchestrator should stop safely instead of fabricating subtitles.
 
-## Reference Direction
+## Command Helpers
 
-The reference project `github/xiaohu-video-translate/` has a useful three-part split:
+Run commands from the relevant skill directory.
 
-- orchestration
-- video download / media ingest
-- speech transcribe
-- translation polish
+Media ingest:
 
-This suite learns from that separation, including the reference downloader's site-specific script boundary, but does not copy reference code. It makes child skill independence and structured handoff contracts explicit from the start.
+```bash
+python3 scripts/media_ingest.py "<video-url-or-local-file>"
+python3 scripts/media_ingest.py "<video-url>" --mode audio
+python3 scripts/media_ingest.py "<video-url>" --mode subtitles --sub-langs "en,zh-Hans"
+python3 scripts/media_ingest.py --self-check
+```
 
-## Phase 1 Design Principles
+Speech transcription:
 
-- Agent-first: `SKILL.md` files are the primary runtime interface.
-- Use selective tooling: media ingest and transcription can be tool-heavy; translation and polish stay agent-first.
-- 下载是 media ingest，不是翻译流程的一部分。
-- URL 下载和本地文件输入必须分开处理。
-- 网站差异必须进入 site adapter，不要堆进一个通用下载脚本。
-- 每次运行都必须生成可追踪记录，即使失败也写 manifest / log。
-- `output_dir`, cookies, proxy, quality, chunk size must be configuration or job options.
-- Deterministic media operations may be scripted; language judgment should remain agent-guided unless a specific executable helper is requested later.
-- Do not put download, transcription, translation polish, alignment, and rendering into one uncontrolled step.
-- Phase 1 prioritizes stable downloader architecture and diagnosability over broad platform coverage.
+```bash
+python3 scripts/transcribe_srt.py "<local-audio-or-video>"
+python3 scripts/transcribe_srt.py "<media-ingest-manifest.json>"
+python3 scripts/transcribe_srt.py --self-check
+```
 
-## Suite Specs
+Translation helpers:
 
-- `specs/suite-contract.md`
-- `specs/media-ingest-contract.md`
-- `specs/speech-transcribe-contract.md`
-- `specs/translation-polish-contract.md`
-- `specs/job-manifest.schema.md`
+```bash
+python3 scripts/validate_markdown_translation.py <source.md> <translated.md>
+python3 scripts/bilingual_ass.py <bilingual.srt>
+```
 
-## Current Status
+## Requirements
 
-The suite scaffold exists. `vlp-video-download` has functional local ingest and site adapters for generic `yt-dlp`, YouTube, Bilibili, and Douyin. `vlp-speech-transcribe` has a minimal local audio/video -> SRT/TXT transcription script. `vlp-translation-polish` has agent-facing instructions and a bilingual SRT -> ASS text-asset utility; it is not an automated translation product. Subtitle rendering and burn-in logic have not been implemented.
+- Python 3.
+- `yt-dlp` for URL downloads.
+- `ffmpeg` and `ffprobe` for media probing and audio extraction.
+- `mlx-whisper` or `faster-whisper` for local ASR transcription.
+
+The scripts do not install external tools automatically.
+
+## Boundaries
+
+- `vlp-video-download` does not transcribe, translate, polish, render, or burn subtitles.
+- `vlp-speech-transcribe` does not download remote URLs or translate text.
+- `vlp-translation-polish` is agent-guided and does not provide a full automated translation runner.
+- `vlp-orchestrator` coordinates child skills but does not duplicate their internal logic.
+
+Generated runs, logs, local agent records, and development notes are intentionally kept out of the public release.

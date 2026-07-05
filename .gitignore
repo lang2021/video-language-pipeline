@@ -1,7 +1,21 @@
-*.DS_Store
 .DS_Store
+*.DS_Store
+__pycache__/
+*.py[cod]
+
+# Local runs and generated media/transcripts
+runs/
+skills/*/runs/
 skills/vlp-video-download/data/browser_state/
 skills/vlp-video-download/data/tmp/
 skills/vlp-video-download/data/**/*.json
-skills/vlp-video-download/runs/
-runs/
+
+# Local agent/project records, not public release files
+AGENTS.md
+PROGRESS.md
+WORK_NOTES.md
+ITERATION_LOG.md
+DECISIONS.md
+RESEARCH.md
+skills/*/DEVELOPMENT_NOTES.md
+specs/
