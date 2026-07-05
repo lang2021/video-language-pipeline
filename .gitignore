@@ -1,0 +1,7 @@
+*.DS_Store
+.DS_Store
+skills/vlp-video-download/data/browser_state/
+skills/vlp-video-download/data/tmp/
+skills/vlp-video-download/data/**/*.json
+skills/vlp-video-download/runs/
+runs/
