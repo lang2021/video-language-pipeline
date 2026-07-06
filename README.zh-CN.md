@@ -48,6 +48,28 @@ vlp-video-download
 
 如果视频没有平台字幕，并且 ASR 结果没有有效语音内容，总控应安全停止，不伪造字幕。
 
+## 安装
+
+安装到默认本地 Codex skills 目录：
+
+```bash
+bash install.sh
+```
+
+只检查依赖，不复制文件：
+
+```bash
+bash install.sh --check-only
+```
+
+指定自定义 skills 目录：
+
+```bash
+bash install.sh --target "$HOME/.codex/skills"
+```
+
+安装脚本只复制四个生产 skill 文件夹，运行 helper 自检，并提示缺失的外部命令。它不会自动安装系统工具。
+
 ## 命令辅助工具
 
 在对应 skill 目录下运行命令。

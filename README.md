@@ -48,6 +48,28 @@ Bilingual subtitle requests such as “download bilingual subtitles” or “gen
 
 If a video has no platform subtitles and ASR output contains no useful speech content, the orchestrator should stop safely instead of fabricating subtitles.
 
+## Install
+
+Install the skills into the default local Codex skills directory:
+
+```bash
+bash install.sh
+```
+
+Check dependencies without copying files:
+
+```bash
+bash install.sh --check-only
+```
+
+Use a custom skills directory:
+
+```bash
+bash install.sh --target "$HOME/.codex/skills"
+```
+
+The installer copies only the four production skill folders, runs helper self-checks, and reports missing external commands. It does not install system tools automatically.
+
 ## Command Helpers
 
 Run commands from the relevant skill directory.
