@@ -50,25 +50,49 @@ If a video has no platform subtitles and ASR output contains no useful speech co
 
 ## Install
 
-Install the skills into the default local Codex skills directory:
+Install directly into the local Codex agent skills directory.
+
+macOS:
 
 ```bash
 bash install.sh
 ```
 
-Check dependencies without copying files:
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+Check dependencies without copying files.
+
+macOS:
 
 ```bash
 bash install.sh --check-only
 ```
 
-Use a custom skills directory:
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -CheckOnly
+```
+
+Use a custom skills directory.
+
+macOS:
 
 ```bash
 bash install.sh --target "$HOME/.codex/skills"
 ```
 
-The installer copies only the four production skill folders, runs helper self-checks, and reports missing external commands. It does not install system tools automatically.
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -Target "$HOME\.codex\skills"
+```
+
+The installers copy only the four production skill folders, run helper self-checks, and report missing external commands. They do not install system tools automatically.
 
 ## Command Helpers
 
