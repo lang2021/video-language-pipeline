@@ -1,6 +1,6 @@
 ---
 name: vlp-translation-polish
-description: "Video Language Pipeline 的 agent-guided 语言转换与润色 skill。处理 Markdown、纯文本、transcript、SRT/VTT 字幕、字幕片段和用户直接粘贴的文本。"
+description: "Video Language Pipeline 的 agent-guided 语言转换与润色 skill。处理 Markdown、静态 HTML 网页镜像、纯文本、transcript、SRT/VTT 字幕、字幕片段和用户直接粘贴的文本。"
 ---
 
 # vlp-translation-polish
@@ -12,6 +12,7 @@ description: "Video Language Pipeline 的 agent-guided 语言转换与润色 ski
 适用输入：
 
 - Markdown 文稿。
+- 已离线化的静态 HTML 网页镜像。
 - 纯文本。
 - transcript 转写稿。
 - SRT / VTT 字幕。
@@ -36,6 +37,9 @@ description: "Video Language Pipeline 的 agent-guided 语言转换与润色 ski
 
 - `scripts/bilingual_ass.py`：把已经生成的双语 SRT 转成 ASS 文本资产。
 - `scripts/validate_markdown_translation.py`：校验 Markdown 译文是否保留 URL 和基础结构。
+- `scripts/html_translation_nodes.py`：提取和回填静态网页镜像中的可翻译文本节点。
+- `scripts/validate_html_translation.py`：校验静态网页镜像译文是否保留结构、资源和受保护属性。
+- `scripts/render_translation_queue.py`：从 batch manifest 生成只读的 `queue.md` 浏览视图。
 
 允许的工具用途：
 
@@ -91,6 +95,61 @@ python3 scripts/validate_markdown_translation.py <source.md> <translated.md>
 ```
 
 如果校验失败，先修复 URL 或结构问题，再交付。不要依赖肉眼检查长 URL。
+
+## 静态 HTML 网页镜像
+
+只处理已经完成离线化的静态镜像：同一目录中的 `index.html` 与本地资源，例如 `mirror_assets/`。网页捕获、资源下载、镜像修复和浏览器渲染验收属于 `chrome-webpage-mirror`，不属于本 skill。
+
+输出规则：
+
+- `index.html` 是只读 source。
+- 默认译文写为同目录 `index.zh.html`，复用同一套本地资源。
+- 也可指定独立的派生 `index.zh.html` 输出目录；此时通过 `--asset-root` 共享 source 的资源，并由 helper 确定性改写资源相对路径，不复制 asset。
+- 翻译可见文字节点、`<title>`、`alt`、`aria-label`、`placeholder`、普通 `title` 和 submit/button/reset 的可见 `value`。
+- 可按自然页面区块分段翻译，但整页未完成验收前不能标记为完成。
+
+受保护内容：
+
+- 不改 URL、`href`、`src`、`srcset`、`poster`、`action`、`id`、`class`、`name`、`data-*`、资源 `rel` 或其他结构属性。
+- 不改 `<script>`、`<style>`、`<code>`、`<pre>`、`<template>`、`<textarea>` 的内容。
+- 不在原始 HTML 上做全局字符串替换；只编辑明确识别的可翻译文本节点或可见文案字段。
+- 不把品牌名、人名、产品名、代码、路径、URL 或有意保留的技术术语误判为漏译。
+
+网页较长或需要批量处理时，优先使用文本节点 helper：
+
+```bash
+python3 scripts/html_translation_nodes.py extract index.html --bundle <translation.json> --target-lang zh-CN
+# agent 只填写 translation.json 中每个 unit 的 target 字段
+python3 scripts/html_translation_nodes.py merge index.html --bundle <translation.json> --semantic-report <report.json>
+# 独立派生输出，不复制 mirror_assets/
+python3 scripts/html_translation_nodes.py merge index.html --bundle <translation.json> --output <derived>/index.zh.html --asset-root <mirror-root>
+```
+
+- 不修改 bundle 的 schema、source hash、unit ID、顺序、context 或 source。
+- bundle 是可续跑的临时翻译工作资产，不是 batch 状态真相。
+- `merge` 会拒绝空译文和 source 漂移，从原始 HTML 回填，并在验证通过后原子写入 `index.zh.html`。
+- 独立输出仅可重写本地资源型 `src`、`srcset`、`poster`、资源 `href`、`object[data]`、CSS `url(...)`；普通页面链接、外部 URL、脚本、代码和非资源 CSS 必须保持不变。
+- 已有 `index.zh.html` 时必须显式使用 `--force`；验证失败不得覆盖现有译文。
+- `merge` 的结构校验是硬门槛；其后自动输出语义 lint 摘要，语义 warning 不会伪装成结构失败。
+
+不使用 helper 时，完成网页译文后必须运行：
+
+```bash
+python3 scripts/validate_html_translation.py index.html index.zh.html
+python3 scripts/validate_html_translation.py index.html index.zh.html --semantic-lint --semantic-report <report.json>
+# 独立输出使用同一 asset root 做实际资源路径校验
+python3 scripts/validate_html_translation.py index.html <derived>/index.zh.html --asset-root <mirror-root>
+```
+
+helper 的 `merge` 会调用同一结构 validator 并运行语义 lint；也可独立复查。结构校验失败时先修复结构、属性或资源问题。语义 lint 只告警风险：可见文本单元数量漂移、长英文原样保留、短 source 异常膨胀与长 source 异常缩短，并报告中文覆盖率、长度比和 warning 汇总。它不判断原意与自然度；agent 仍负责完整性、术语一致性和告警复核。
+
+长批次只维护一份 schema v3 per-run manifest 作为状态真相。每个 item 必须记录 `id`、`source`、`output`、`status`、`mechanical_check`、`content_coverage`、`semantic_check`、`expression_quality`、`warnings` 和 `updated_at`。`structure_passed` 与 `resources_passed` 只表示机械结果，不能表述为全部翻译质量通过。`queue.md` 只能由 manifest 生成：
+
+```bash
+python3 scripts/render_translation_queue.py --manifest <manifest.json> --output <queue.md>
+```
+
+批次质量抽样只适用于显式的大批次：前 5 页逐页完整复核，之后每 20 页抽一页，检查标题、开头、中段、结尾与全部 lint 告警。warning 不少于 10 的页面列为高风险待修项。发现问题写入 `needs_fix`，按既定规则继续批次，不自动暂停。收尾必须全量机械检查与 lint，并分开报告机械通过和仍待 Agent 复核的页面。跨领域批次可在 run 内维护 task-local glossary；不新增自动 glossary extractor。
 
 ## 长文本处理
 

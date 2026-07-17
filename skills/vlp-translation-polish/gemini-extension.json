@@ -1,6 +1,6 @@
 {
   "name": "vlp-translation-polish",
   "version": "1.0.0",
-  "description": "Video Language Pipeline 的文字资产翻译与润色 skill：处理 transcript、字幕文本、Markdown 和普通文稿，并可把已生成的双语 SRT 转为双语 ASS。",
+  "description": "Video Language Pipeline 的文字资产翻译与润色 skill：处理 transcript、字幕文本、Markdown、静态 HTML 网页镜像和普通文稿，并可把已生成的双语 SRT 转为双语 ASS。",
   "contextFileName": "SKILL.md"
 }
